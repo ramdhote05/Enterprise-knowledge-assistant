@@ -10,11 +10,12 @@ from docx import Document as DocxDocument
 from dotenv import load_dotenv
 from langchain_core.documents import Document
 from langchain_core.messages import BaseMessage
-from langchain_core.prompts import PromptTemplate
+from langchain_core.prompts import ChatPromptTemplate
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_community.vectorstores import FAISS
-from langchain_huggingface import HuggingFaceEmbeddings, HuggingFaceEndpoint
+from langchain_groq import ChatGroq
+from langchain_huggingface import HuggingFaceEmbeddings
 
 load_dotenv()
 if os.getenv("HUGGINGFACEHUB_API_TOKEN") and not os.getenv("HF_TOKEN"):
@@ -29,19 +30,16 @@ def get_embedding_model() -> HuggingFaceEmbeddings:
     return HuggingFaceEmbeddings(model=model_name)
 
 
-def get_llm() -> HuggingFaceEndpoint:
-    repo_id = os.getenv("HF_LLM_REPO_ID", "HuggingFaceH4/zephyr-7b-beta")
-    token = os.getenv("HUGGINGFACEHUB_API_TOKEN")
-    if not token:
-        raise RuntimeError("Set HUGGINGFACEHUB_API_TOKEN in your environment or .env file.")
-
-    return HuggingFaceEndpoint(
-        repo_id=repo_id,
-        huggingfacehub_api_token=token,
-        task="text-generation",
+def get_llm() -> ChatGroq:
+    api_key = os.getenv("GROQ_API_KEY")
+    if not api_key:
+        raise RuntimeError("Set GROQ_API_KEY in your environment or .env file.")
+    model = os.getenv("GROQ_MODEL", "llama-3.1-8b-instant")
+    return ChatGroq(
+        api_key=api_key,
+        model=model,
         temperature=0.2,
-        max_new_tokens=700,
-        top_p=0.9,
+        max_tokens=700,
     )
 
 
@@ -192,13 +190,16 @@ def answer_question(question: str, vector_store: FAISS) -> tuple[str, list[Docum
         f"Source: {citation_label(doc)}\n{doc.page_content}" for doc in source_docs
     )
 
-    prompt = PromptTemplate.from_template(
-        "<|system|>You are an enterprise knowledge assistant. "
-        "Answer only from the provided context. "
-        "If the answer is not in the context, say you do not know. "
-        "Include concise source references inside the answer using the source names when possible.</s>\n"
-        "<|user|>Context:\n{context}\n\nQuestion: {input}</s>\n"
-        "<|assistant|>"
+    prompt = ChatPromptTemplate.from_messages(
+        [
+            (
+                "system",
+                "You are an enterprise knowledge assistant. Answer only from the provided context. "
+                "If the answer is not in the context, say you do not know. "
+                "Include concise source references using source names when possible.\n\nContext:\n{context}",
+            ),
+            ("human", "{input}"),
+        ]
     )
     answer = (prompt | llm).invoke({"input": question, "context": context})
     return response_text(answer), source_docs
@@ -213,13 +214,16 @@ def summarize_collection(vector_store: FAISS) -> tuple[str, list[Document]]:
         f"Source: {citation_label(doc)}\n{doc.page_content}" for doc in docs
     )
 
-    prompt = PromptTemplate.from_template(
-        "<|system|>You are a document summarization assistant. "
-        "Summarize the provided enterprise document excerpts clearly and concisely.</s>\n"
-        "<|user|>Summarize the following excerpts using short sections for overview, "
-        "key points, decisions, risks, and action items. Mention source names where useful.\n\n"
-        "Excerpts:\n{context}</s>\n"
-        "<|assistant|>"
+    prompt = ChatPromptTemplate.from_messages(
+        [
+            (
+                "system",
+                "Summarize the enterprise document collection from the provided excerpts. "
+                "Use short sections for overview, key points, decisions, risks, and action items. "
+                "Mention source names where useful.",
+            ),
+            ("human", "{context}"),
+        ]
     )
     answer = (prompt | get_llm()).invoke({"context": context})
     return response_text(answer), docs
