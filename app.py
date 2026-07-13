@@ -30,7 +30,7 @@ def get_embedding_model() -> HuggingFaceEmbeddings:
 
 
 def get_llm() -> HuggingFaceEndpoint:
-    repo_id = os.getenv("HF_LLM_REPO_ID", "mistralai/Mistral-7B-Instruct-v0.3")
+    repo_id = os.getenv("HF_LLM_REPO_ID", "HuggingFaceH4/zephyr-7b-beta")
     token = os.getenv("HUGGINGFACEHUB_API_TOKEN")
     if not token:
         raise RuntimeError("Set HUGGINGFACEHUB_API_TOKEN in your environment or .env file.")
@@ -193,11 +193,12 @@ def answer_question(question: str, vector_store: FAISS) -> tuple[str, list[Docum
     )
 
     prompt = PromptTemplate.from_template(
-        "<s>[INST] You are an enterprise knowledge assistant. "
+        "<|system|>You are an enterprise knowledge assistant. "
         "Answer only from the provided context. "
         "If the answer is not in the context, say you do not know. "
-        "Include concise source references inside the answer using the source names when possible.\n\n"
-        "Context:\n{context}\n\nQuestion: {input} [/INST]"
+        "Include concise source references inside the answer using the source names when possible.</s>\n"
+        "<|user|>Context:\n{context}\n\nQuestion: {input}</s>\n"
+        "<|assistant|>"
     )
     answer = (prompt | llm).invoke({"input": question, "context": context})
     return response_text(answer), source_docs
@@ -213,10 +214,12 @@ def summarize_collection(vector_store: FAISS) -> tuple[str, list[Document]]:
     )
 
     prompt = PromptTemplate.from_template(
-        "<s>[INST] Summarize the following enterprise document excerpts. "
-        "Use short sections for overview, key points, decisions, risks, and action items. "
-        "Mention source names where useful.\n\n"
-        "Excerpts:\n{context} [/INST]"
+        "<|system|>You are a document summarization assistant. "
+        "Summarize the provided enterprise document excerpts clearly and concisely.</s>\n"
+        "<|user|>Summarize the following excerpts using short sections for overview, "
+        "key points, decisions, risks, and action items. Mention source names where useful.\n\n"
+        "Excerpts:\n{context}</s>\n"
+        "<|assistant|>"
     )
     answer = (prompt | get_llm()).invoke({"context": context})
     return response_text(answer), docs
