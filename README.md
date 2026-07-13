@@ -57,3 +57,9 @@ Then open the local Streamlit URL shown in the terminal.
 - Uploaded files are temporarily saved under `.streamlit_uploads/`.
 - The default embedding model is `sentence-transformers/all-MiniLM-L6-v2`.
 - The default LLM endpoint model is `meta-llama/Meta-Llama-3-8B-Instruct`.
+
+## Deployment
+
+- Local Streamlit app: `streamlit run app.py`
+- Vercel lightweight API endpoint: `https://enterprise-knowledge-assistant-i0xhnscvl.vercel.app`
+- The Vercel deployment serves a simple status endpoint; the main Streamlit interface is intended to run locally.
