@@ -62,5 +62,5 @@ Then open the local Streamlit URL shown in the terminal.
 
 - Local Streamlit app: `streamlit run app.py`
 - Vercel lightweight API endpoint: `https://enterprise-knowledge-assistant-i0xhnscvl.vercel.app`
-- The Vercel deployment serves only a lightweight status endpoint.
+- The Vercel deployment hosts a simple FastAPI status endpoint from `api/index.py`.
 - The full Streamlit user interface must be run locally with `streamlit run app.py`.
