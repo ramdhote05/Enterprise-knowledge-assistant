@@ -8,6 +8,7 @@ import pandas as pd
 import streamlit as st
 from docx import Document as DocxDocument
 from dotenv import load_dotenv
+from fastapi import FastAPI
 from langchain_core.documents import Document
 from langchain_core.messages import BaseMessage
 from langchain_core.prompts import ChatPromptTemplate
@@ -15,6 +16,15 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_community.vectorstores import FAISS
 from langchain_huggingface import ChatHuggingFace, HuggingFaceEmbeddings, HuggingFaceEndpoint
+
+app = FastAPI()
+
+@app.get("/")
+def root() -> dict[str, str]:
+    return {
+        "message": "This repository contains a Streamlit app. Run it locally with `streamlit run app.py`.",
+        "github": "https://github.com/ramdhote05/Enterprise-knowledge-assistant",
+    }
 
 
 load_dotenv()
