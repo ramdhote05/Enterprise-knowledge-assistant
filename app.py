@@ -30,7 +30,7 @@ def get_embedding_model() -> HuggingFaceEmbeddings:
 
 
 def get_llm() -> ChatHuggingFace:
-    repo_id = os.getenv("HF_LLM_REPO_ID", "meta-llama/Meta-Llama-3-8B-Instruct")
+    repo_id = os.getenv("HF_LLM_REPO_ID", "mistralai/Mistral-7B-Instruct-v0.3")
     token = os.getenv("HUGGINGFACEHUB_API_TOKEN")
     if not token:
         raise RuntimeError("Set HUGGINGFACEHUB_API_TOKEN in your environment or .env file.")
@@ -38,7 +38,7 @@ def get_llm() -> ChatHuggingFace:
     endpoint = HuggingFaceEndpoint(
         repo_id=repo_id,
         huggingfacehub_api_token=token,
-        task="conversational",
+        task="text-generation",
         temperature=0.2,
         max_new_tokens=700,
         top_p=0.9,
