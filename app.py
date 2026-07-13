@@ -109,8 +109,12 @@ def load_word_document(path: Path) -> list[Document]:
 def load_tabular_document(path: Path) -> list[Document]:
     if path.suffix.lower() == ".csv":
         frames = {"CSV": pd.read_csv(path)}
+    elif path.suffix.lower() == ".xls":
+        # xlrd is required for legacy .xls files; openpyxl cannot read them
+        frames = pd.read_excel(path, sheet_name=None, engine="xlrd")
     else:
-        frames = pd.read_excel(path, sheet_name=None)
+        # .xlsx and other modern formats
+        frames = pd.read_excel(path, sheet_name=None, engine="openpyxl")
 
     documents: list[Document] = []
     for sheet_name, frame in frames.items():
@@ -132,7 +136,10 @@ def load_tabular_document(path: Path) -> list[Document]:
 def load_documents(paths: Iterable[Path]) -> list[Document]:
     documents: list[Document] = []
     for path in paths:
-        documents.extend(load_document(path))
+        try:
+            documents.extend(load_document(path))
+        except Exception as exc:
+            st.warning(f"⚠️ Could not load **{path.name}**: {exc}")
     return documents
 
 
